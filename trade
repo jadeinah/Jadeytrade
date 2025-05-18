@@ -75,26 +75,17 @@ local function addItem(id)
 	wait(0.1)
 end
 
--- ✅ Accept and confirm only when pets are fully added
-local function acceptAndConfirm(expectedCount)
-	local connection
+-- ✅ Accept & confirm (no server event dependency)
+local function acceptAndConfirm()
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
+	print("[✓] Trade accepted")
 
-	connection = ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ClientTradeUpdated").OnClientEvent:Connect(function(data)
-		if data and data.offeredPets and #data.offeredPets >= expectedCount then
-			connection:Disconnect()
-
-			-- ✅ Accept after all pets are added
-			ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
-			print("[✓] Trade accepted")
-
-			wait(0.5)
-			for i = 1, 5 do
-				wait(0.5)
-				ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
-				print("[✓] Forced confirm attempt:", i)
-			end
-		end
-	end)
+	wait(0.5)
+	for i = 1, 5 do
+		wait(0.5)
+		ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+		print("[✓] Forced confirm attempt:", i)
+	end
 end
 
 -- ✅ Main logic
@@ -126,6 +117,7 @@ for _, username in ipairs(usernames) do
 		togglePicking(false)
 		wait(1)
 
+		local addedCount = 0
 		for slot = 1, petsPerTrade do
 			local petId = allItems[petIndex]
 			if not petId then
@@ -134,10 +126,12 @@ for _, username in ipairs(usernames) do
 			end
 			addItem(petId)
 			petIndex += 1
+			addedCount += 1
 		end
 
-		-- ✅ Only accept/confirm after all pets are added
-		acceptAndConfirm(petsPerTrade)
+		if addedCount > 0 then
+			acceptAndConfirm()
+		end
 	end
 end
 
