@@ -1,7 +1,7 @@
 -- ✅ LOAD CONFIG
 local config = getgenv().ScriptsConfig
 
-if not config then error("❌ ScriptsConfig is not set.") end
+if not config == nil then error("❌ ScriptsConfig is not set.") end
 if not config.targetPlayerName or not config.itemKind then error("❌ Missing required config values.") end
 
 local targetPlayerName = config.targetPlayerName
@@ -86,17 +86,19 @@ local function confirmAndWaitForEnd()
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
 	print("[✓] Trade confirmed")
 
+	local success = false
 	local finished = false
-	local conn
 
-	conn = ReplicatedStorage:WaitForChild("API")
-		:WaitForChild("TradeAPI")
-		:WaitForChild("ClientTradeEnded")
-		.OnClientEvent:Connect(function()
-			finished = true
-			conn:Disconnect()
-			print("[✓] Trade fully ended.")
-		end)
+	local conn = ReplicatedStorage.API.TradeAPI.ClientTradeEnded.OnClientEvent:Connect(function(data)
+		finished = true
+		if typeof(data) == "table" and data.success == true then
+			success = true
+			print("[✅] Trade completed successfully.")
+		else
+			print("[❌] Trade failed or was cancelled.")
+		end
+		conn:Disconnect()
+	end)
 
 	local timeout = 0
 	while not finished and timeout < 10 do
@@ -107,6 +109,8 @@ local function confirmAndWaitForEnd()
 	if not finished then
 		warn("⚠️ Trade did not finish in time.")
 	end
+
+	return success
 end
 
 -- ✅ MAIN LOGIC
@@ -151,8 +155,12 @@ for tradeNumber = 1, tradeCount do
 	print("[→] Total added to trade:", addedCount)
 	if addedCount > 0 then
 		acceptAfterDelay()
-		confirmAndWaitForEnd()
+		local success = confirmAndWaitForEnd()
+		if not success then
+			print("[✋] Stopping further trades due to failure.")
+			break
+		end
 	end
 end
 
-print("[🏁] Finished", tradeCount, "trades.")
+print("[🏁] Script finished.")
