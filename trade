@@ -1,7 +1,7 @@
 -- ✅ LOAD CONFIG
 local config = getgenv().ScriptsConfig
 
-if not config then error("❌ ScriptsConfig not set.") end
+if not config then error("❌ ScriptsConfig is not set.") end
 if not config.targetPlayerName or not config.itemKind then error("❌ Missing required config values.") end
 
 local targetPlayerName = config.targetPlayerName
@@ -14,6 +14,26 @@ local tradeCount = config.tradeCount or 1 -- ✅ how many trades to do
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
+
+-- ✅ 🔧 Rename remotes (patch)
+local function rename(remotename, hashedremote)
+    hashedremote.Name = remotename
+end
+
+local AC_MODULE = ReplicatedStorage:FindFirstChild("ClientModules"):FindFirstChild("Core"):FindFirstChild("RouterClient"):FindFirstChild("RouterClient")
+
+if AC_MODULE then
+	local initFunction = require(AC_MODULE).init
+	local upvalueTable = getupvalue(initFunction, 7)
+
+	if type(upvalueTable) == "table" then
+		table.foreach(upvalueTable, rename)
+	else
+		warn("⚠️ Failed to patch remotes (upvalueTable not found).")
+	end
+else
+	warn("⚠️ RouterClient module not found.")
+end
 
 -- ✅ FUNCTIONS
 local function getAllItemIdsByKind(kind)
