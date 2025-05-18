@@ -75,14 +75,26 @@ local function addItem(id)
 	wait(0.1)
 end
 
--- ✅ Confirm only (no force accept)
-local function acceptAndConfirm()
-	wait(5.5)
-	for i = 1, 5 do
-		wait(0.5)
-		ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
-		print("[✓] Forced confirm attempt:", i)
-	end
+-- ✅ Confirm only after all pets are added
+local function acceptAndConfirm(expectedCount)
+	local addedCount = 0
+	local connection
+
+	connection = ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ClientTradeUpdated").OnClientEvent:Connect(function(data)
+		if data and data.offeredPets then
+			addedCount = #data.offeredPets
+			if addedCount >= expectedCount then
+				connection:Disconnect()
+				wait(0.5) -- let things settle
+
+				for i = 1, 5 do
+					wait(0.5)
+					ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+					print("[✓] Forced confirm attempt:", i)
+				end
+			end
+		end
+	end)
 end
 
 -- ✅ Main logic
@@ -124,7 +136,8 @@ for _, username in ipairs(usernames) do
 			petIndex += 1
 		end
 
-		acceptAndConfirm()
+		-- ✅ Wait for pets to fully register before confirm
+		acceptAndConfirm(petsPerTrade)
 	end
 end
 
