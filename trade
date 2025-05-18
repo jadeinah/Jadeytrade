@@ -75,17 +75,17 @@ local function addItem(id)
 	wait(0.1)
 end
 
--- ✅ Accept & confirm (no server event dependency)
-local function acceptAndConfirm()
+-- ✅ Accept and Confirm (fixed-time version)
+local function acceptAfterDelay()
+	wait(6)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
 	print("[✓] Trade accepted")
+end
 
-	wait(0.5)
-	for i = 1, 5 do
-		wait(0.5)
-		ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
-		print("[✓] Forced confirm attempt:", i)
-	end
+local function confirmTrade()
+	wait(2.5)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+	print("[✓] Trade confirmed")
 end
 
 -- ✅ Main logic
@@ -130,7 +130,8 @@ for _, username in ipairs(usernames) do
 		end
 
 		if addedCount > 0 then
-			acceptAndConfirm()
+			acceptAfterDelay()
+			confirmTrade()
 		end
 	end
 end
