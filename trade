@@ -81,6 +81,28 @@ local function acceptAfterDelay()
 	print("[✓] Trade accepted")
 end
 
+local function waitUntilOtherPlayerAccepts()
+	local otherAccepted = false
+
+	local conn = ReplicatedStorage.API.TradeAPI.ClientTradeUpdated.OnClientEvent:Connect(function(data)
+		if typeof(data) == "table" and (data.theirAccepted or (data.accepted and data.accepted.theirSide)) then
+			otherAccepted = true
+			conn:Disconnect()
+			print("[✓] Other player accepted.")
+		end
+	end)
+
+	local timeout = 0
+	while not otherAccepted and timeout < 30 do
+		wait(1)
+		timeout += 1
+	end
+
+	if not otherAccepted then
+		warn("⚠️ Other player didn't accept in time.")
+	end
+end
+
 local function confirmTrade()
 	wait(2.5)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
@@ -130,8 +152,9 @@ for tradeNumber = 1, tradeCount do
 
 	if addedCount > 0 then
 		acceptAfterDelay()
+		waitUntilOtherPlayerAccepts()
 		confirmTrade()
-		wait(20) -- ✅ wait 20 seconds before next trade
+		wait(20) -- wait before next trade
 	else
 		warn("❌ No pets added. Stopping.")
 		break
