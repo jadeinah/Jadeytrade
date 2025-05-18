@@ -8,32 +8,44 @@ local targetPlayerName = config.targetPlayerName
 local itemKind = config.itemKind
 local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
-local tradeCount = config.tradeCount or 1 -- ✅ how many trades to do
+local tradeCount = config.tradeCount or 1
+
+-- ✅ DEHASH PATCH: Rename hashed remotes
+local function rename(remotename, hashedremote)
+    if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
+        hashedremote.Name = remotename
+    end
+end
+
+local success, RouterClient = pcall(function()
+    return require(game:GetService("ReplicatedStorage")
+        :WaitForChild("ClientModules")
+        :WaitForChild("Core")
+        :WaitForChild("RouterClient")
+        :WaitForChild("RouterClient"))
+end)
+
+if success and RouterClient and type(RouterClient.init) == "function" then
+    local ok, upvalue = pcall(function()
+        return getupvalue(RouterClient.init, 7)
+    end)
+
+    if ok and type(upvalue) == "table" then
+        for k, v in pairs(upvalue) do
+            rename(k, v)
+        end
+        print("[✓] Remotes dehashed successfully.")
+    else
+        warn("⚠️ getupvalue(7) failed or returned non-table.")
+    end
+else
+    warn("⚠️ RouterClient not found or unreadable.")
+end
 
 -- ✅ SERVICES
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
-
--- ✅ 🔧 Rename remotes (patch)
-local function rename(remotename, hashedremote)
-    hashedremote.Name = remotename
-end
-
-local AC_MODULE = ReplicatedStorage:FindFirstChild("ClientModules"):FindFirstChild("Core"):FindFirstChild("RouterClient"):FindFirstChild("RouterClient")
-
-if AC_MODULE then
-	local initFunction = require(AC_MODULE).init
-	local upvalueTable = getupvalue(initFunction, 7)
-
-	if type(upvalueTable) == "table" then
-		table.foreach(upvalueTable, rename)
-	else
-		warn("⚠️ Failed to patch remotes (upvalueTable not found).")
-	end
-else
-	warn("⚠️ RouterClient module not found.")
-end
 
 -- ✅ FUNCTIONS
 local function getAllItemIdsByKind(kind)
@@ -75,7 +87,7 @@ local function confirmTrade()
 	print("[✓] Trade confirmed")
 end
 
--- ✅ MAIN
+-- ✅ MAIN LOGIC
 local itemIds = getAllItemIdsByKind(itemKind)
 if #itemIds == 0 then
 	warn("❌ No items of kind '" .. itemKind .. "' found.")
