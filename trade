@@ -8,6 +8,7 @@ local targetPlayerName = config.targetPlayerName
 local itemKind = config.itemKind
 local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
+local tradeCount = config.tradeCount or 1 -- ✅ how many trades to do
 
 -- ✅ SERVICES
 local Players = game:GetService("Players")
@@ -63,25 +64,41 @@ end
 
 print("[✅] Found", #itemIds, itemKind .. "(s)")
 
-sendTradeRequest()
-wait(4)
-
-togglePicking(true)
-wait(1)
-togglePicking(false)
-wait(1)
-
 local maxTradeSlots = 9
-local addedCount = 0
-for _, itemId in ipairs(itemIds) do
-	if useCustomAmount and addedCount >= customAmount then break end
-	if not useCustomAmount and addedCount >= maxTradeSlots then break end
+local petIndex = 1
 
-	addItem(itemId)
-	addedCount += 1
+for tradeNumber = 1, tradeCount do
+	print("[→] Starting trade #"..tradeNumber)
+
+	sendTradeRequest()
+	wait(4)
+
+	togglePicking(true)
+	wait(1)
+	togglePicking(false)
+	wait(1)
+
+	local addedCount = 0
+	for slot = 1, maxTradeSlots do
+		if useCustomAmount and addedCount >= customAmount then break end
+		if not useCustomAmount and addedCount >= maxTradeSlots then break end
+
+		local itemId = itemIds[petIndex]
+		if not itemId then
+			warn("⚠️ Out of pets to trade.")
+			break
+		end
+
+		addItem(itemId)
+		petIndex += 1
+		addedCount += 1
+	end
+
+	print("[→] Total added to trade:", addedCount)
+	if addedCount > 0 then
+		acceptAfterDelay()
+		confirmTrade()
+	end
 end
 
-print("[→] Total added to trade:", addedCount)
-
-acceptAfterDelay()
-confirmTrade()
+print("[🏁] Finished", tradeCount, "trades.")
