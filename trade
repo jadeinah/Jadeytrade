@@ -87,7 +87,32 @@ local function confirmTrade()
 	print("[✓] Trade confirmed")
 end
 
--- ✅ MAIN LOGIC
+-- ✅ Wait for current trade to end before next one
+local function waitForTradeToEnd()
+	local finished = false
+	local conn
+
+	conn = ReplicatedStorage:WaitForChild("API")
+		:WaitForChild("TradeAPI")
+		:WaitForChild("ClientTradeEnded")
+		.OnClientEvent:Connect(function()
+			finished = true
+			conn:Disconnect()
+			print("[✓] Trade fully ended.")
+		end)
+
+	local timeout = 0
+	while not finished and timeout < 10 do
+		wait(1)
+		timeout += 1
+	end
+
+	if not finished then
+		warn("⚠️ Trade did not finish in time.")
+	end
+end
+
+-- ✅ MAIN
 local itemIds = getAllItemIdsByKind(itemKind)
 if #itemIds == 0 then
 	warn("❌ No items of kind '" .. itemKind .. "' found.")
@@ -130,6 +155,7 @@ for tradeNumber = 1, tradeCount do
 	if addedCount > 0 then
 		acceptAfterDelay()
 		confirmTrade()
+		waitForTradeToEnd() -- ✅ Wait until trade is over
 	end
 end
 
