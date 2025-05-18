@@ -75,7 +75,6 @@ local function addItem(id)
 	wait(0.1)
 end
 
--- ✅ Confirm only after all pets are added
 local function acceptAndConfirm(expectedCount)
 	local addedCount = 0
 	local connection
@@ -85,8 +84,12 @@ local function acceptAndConfirm(expectedCount)
 			addedCount = #data.offeredPets
 			if addedCount >= expectedCount then
 				connection:Disconnect()
-				wait(0.5) -- let things settle
 
+				-- ✅ Now force accept here (only after pets added)
+				ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
+				print("[✓] Accepted trade")
+
+				wait(0.5)
 				for i = 1, 5 do
 					wait(0.5)
 					ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
@@ -96,6 +99,7 @@ local function acceptAndConfirm(expectedCount)
 		end
 	end)
 end
+
 
 -- ✅ Main logic
 local petKind = config.Pet_Remote_Name
