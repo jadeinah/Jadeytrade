@@ -1,14 +1,15 @@
+-- TradeScript.lua
+
 -- SERVICES
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
 
--- LOAD CONFIG FROM GITHUB
-local config = loadstring(game:HttpGet("https://raw.githubusercontent.com/jadeinah/Jadeytrade/refs/heads/main/trade"))()
+-- CONFIG
+local config = require(script.Parent:WaitForChild("config_module"))
 
 if not config.enabled then
-	warn("❌ Trading is disabled.")
+	warn("🚫 Trading is disabled in config.")
 	return
 end
 
@@ -42,7 +43,7 @@ end
 local function addItem(id)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
 	print("[+] Added:", id)
-	wait(0.1) -- Fast add delay
+	wait(0.1)
 end
 
 local function acceptAfterDelay()
