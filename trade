@@ -97,7 +97,7 @@ end
 
 print("[✅] Found", #itemIds, itemKind .. "(s)")
 
-local maxTradeSlots = 9
+local maxTradeSlots = 18
 local petIndex = 1
 
 for tradeNumber = 1, tradeCount do
