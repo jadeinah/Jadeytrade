@@ -1,0 +1,91 @@
+-- TradeScript.lua
+
+-- SERVICES
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
+
+-- CONFIG
+local config = require(script.Parent:WaitForChild("config_module"))
+
+if not config.enabled then
+	warn("🚫 Trading is disabled in config.")
+	return
+end
+
+local targetPlayerName = config.targetPlayer
+local itemKind = config.itemKind
+local customAmount = config.amount
+local useCustomAmount = true
+
+-- FUNCTIONS
+local function getAllItemIdsByKind(kind)
+	local inventory = ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
+	local matching = {}
+	for id, pet in pairs(inventory) do
+		if pet.kind == kind then
+			table.insert(matching, id)
+		end
+	end
+	return matching
+end
+
+local function sendTradeRequest()
+	local target = Players:WaitForChild(targetPlayerName)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/SendTradeRequest"):FireServer(target)
+	print("[✓] Trade request sent to", targetPlayerName)
+end
+
+local function togglePicking(state)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ToggleBusyIndication"):FireServer({ picking = state })
+end
+
+local function addItem(id)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
+	print("[+] Added:", id)
+	wait(0.1)
+end
+
+local function acceptAfterDelay()
+	wait(5.5)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
+	print("[✓] Trade accepted")
+end
+
+local function confirmTrade()
+	wait(2.5)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+	print("[✓] Trade confirmed")
+end
+
+-- MAIN
+local itemIds = getAllItemIdsByKind(itemKind)
+if #itemIds == 0 then
+	warn("❌ No items of kind '" .. itemKind .. "' found.")
+	return
+end
+
+print("[✅] Found", #itemIds, itemKind .. "(s)")
+
+sendTradeRequest()
+wait(4)
+
+togglePicking(true)
+wait(1)
+togglePicking(false)
+wait(1)
+
+local maxTradeSlots = 9
+local addedCount = 0
+for _, itemId in ipairs(itemIds) do
+	if useCustomAmount and addedCount >= customAmount then break end
+	if not useCustomAmount and addedCount >= maxTradeSlots then break end
+
+	addItem(itemId)
+	addedCount += 1
+end
+
+print("[→] Total added to trade:", addedCount)
+
+acceptAfterDelay()
+confirmTrade()
