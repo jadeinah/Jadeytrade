@@ -1,3 +1,8 @@
+if not getgenv().ScriptsConfig then
+    error("❌ ScriptsConfig is missing! You forgot to run the config setup.")
+end
+
+
 local config = getgenv().ScriptsConfig
 if not config then
 	warn("❌ ScriptsConfig not loaded")
