@@ -17,11 +17,16 @@ if type(config.TradesQuantity) ~= "number" then
     error("❌ ScriptsConfig.TradesQuantity must be a number.")
 end
 
+if type(config.PetsPerTrade) ~= "number" then
+    error("❌ ScriptsConfig.PetsPerTrade must be a number.")
+end
+
 -- ✅ Debug: show config
 print("[✅] Config loaded:")
 print("[→] Pet:", config.Pet_Remote_Name)
 print("[→] Usernames:", table.concat(config.Usernames, ", "))
 print("[→] Trades per user:", config.TradesQuantity)
+print("[→] Pets per trade:", config.PetsPerTrade)
 
 -- ✅ Roblox services
 local Players = game:GetService("Players")
@@ -70,20 +75,23 @@ local function addItem(id)
 	wait(0.1)
 end
 
+-- ✅ Force confirm
 local function acceptAndConfirm()
-	wait(5.5)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
-	print("[✓] Accepted trade")
-	wait(2.5)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
-	print("[✓] Confirmed trade")
+	print("[✓] Forced accept")
+
+	for i = 1, 5 do
+		wait(0.5)
+		ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+		print("[✓] Forced confirm attempt:", i)
+	end
 end
 
 -- ✅ Main logic
 local petKind = config.Pet_Remote_Name
 local usernames = config.Usernames
 local tradesPerUser = config.TradesQuantity
-local petsPerTrade = 16
+local petsPerTrade = config.PetsPerTrade
 
 local allItems = getAllItemIdsByKind(petKind)
 if #allItems == 0 then
@@ -122,4 +130,4 @@ for _, username in ipairs(usernames) do
 	end
 end
 
-print("[🏁] Trading complete.")
+print("[🏁] Auto-trading complete.")
