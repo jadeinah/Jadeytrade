@@ -10,6 +10,14 @@ local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
 local tradeCount = config.tradeCount or 1
 
+-- ✅ REMOTES (CHANGE HERE IF NEEDED)
+local RemoteFolder = game:GetService("ReplicatedStorage"):WaitForChild("Remotes") -- ← change if needed
+local SendTradeRequest = RemoteFolder:WaitForChild("SendTradeRequest")
+local ToggleBusyIndication = RemoteFolder:WaitForChild("ToggleBusyIndication")
+local AcceptNegotiation = RemoteFolder:WaitForChild("AcceptNegotiation")
+local ConfirmTrade = RemoteFolder:WaitForChild("ConfirmTrade")
+local ClientTradeUpdated = RemoteFolder:WaitForChild("ClientTradeUpdated")
+
 -- ✅ DEHASH PATCH
 local function rename(remotename, hashedremote)
 	if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
@@ -61,30 +69,30 @@ end
 
 local function sendTradeRequest()
 	local target = Players:WaitForChild(targetPlayerName)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/SendTradeRequest"):FireServer(target)
+	SendTradeRequest:FireServer(target)
 	print("[✓] Trade request sent to", targetPlayerName)
 end
 
 local function togglePicking(state)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ToggleBusyIndication"):FireServer({ picking = state })
+	ToggleBusyIndication:FireServer({ picking = state })
 end
 
 local function addItem(id)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
+	RemoteFolder:WaitForChild("AddItemToOffer"):FireServer(id)
 	print("[+] Added:", id)
 	wait(0.2)
 end
 
 local function acceptAfterDelay()
 	wait(5.5)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
+	AcceptNegotiation:FireServer()
 	print("[✓] Trade accepted")
 end
 
 local function waitUntilOtherPlayerAccepts()
 	local otherAccepted = false
 
-	local conn = ReplicatedStorage.API.TradeAPI.ClientTradeUpdated.OnClientEvent:Connect(function(data)
+	local conn = ClientTradeUpdated.OnClientEvent:Connect(function(data)
 		if typeof(data) == "table" and (data.theirAccepted or (data.accepted and data.accepted.theirSide)) then
 			otherAccepted = true
 			conn:Disconnect()
@@ -105,7 +113,7 @@ end
 
 local function confirmTrade()
 	wait(2.5)
-	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
+	ConfirmTrade:FireServer()
 	print("[✓] Trade confirmed")
 end
 
