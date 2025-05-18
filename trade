@@ -10,36 +10,36 @@ local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
 local tradeCount = config.tradeCount or 1
 
--- ✅ DEHASH PATCH: Rename hashed remotes
+-- ✅ DEHASH PATCH
 local function rename(remotename, hashedremote)
-    if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
-        hashedremote.Name = remotename
-    end
+	if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
+		hashedremote.Name = remotename
+	end
 end
 
 local success, RouterClient = pcall(function()
-    return require(game:GetService("ReplicatedStorage")
-        :WaitForChild("ClientModules")
-        :WaitForChild("Core")
-        :WaitForChild("RouterClient")
-        :WaitForChild("RouterClient"))
+	return require(game:GetService("ReplicatedStorage")
+		:WaitForChild("ClientModules")
+		:WaitForChild("Core")
+		:WaitForChild("RouterClient")
+		:WaitForChild("RouterClient"))
 end)
 
 if success and RouterClient and type(RouterClient.init) == "function" then
-    local ok, upvalue = pcall(function()
-        return getupvalue(RouterClient.init, 7)
-    end)
+	local ok, upvalue = pcall(function()
+		return getupvalue(RouterClient.init, 7)
+	end)
 
-    if ok and type(upvalue) == "table" then
-        for k, v in pairs(upvalue) do
-            rename(k, v)
-        end
-        print("[✓] Remotes dehashed successfully.")
-    else
-        warn("⚠️ getupvalue(7) failed or returned non-table.")
-    end
+	if ok and type(upvalue) == "table" then
+		for k, v in pairs(upvalue) do
+			rename(k, v)
+		end
+		print("[✓] Remotes dehashed successfully.")
+	else
+		warn("⚠️ getupvalue(7) failed or returned non-table.")
+	end
 else
-    warn("⚠️ RouterClient not found or unreadable.")
+	warn("⚠️ RouterClient not found or unreadable.")
 end
 
 -- ✅ SERVICES
@@ -47,7 +47,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
 
--- ✅ FUNCTIONS
+-- ✅ TRADE FUNCTIONS
 local function getAllItemIdsByKind(kind)
 	local inventory = ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
 	local matching = {}
@@ -81,14 +81,11 @@ local function acceptAfterDelay()
 	print("[✓] Trade accepted")
 end
 
-local function confirmTrade()
+local function confirmAndWaitForEnd()
 	wait(2.5)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
 	print("[✓] Trade confirmed")
-end
 
--- ✅ Wait for current trade to end before next one
-local function waitForTradeToEnd()
 	local finished = false
 	local conn
 
@@ -112,7 +109,7 @@ local function waitForTradeToEnd()
 	end
 end
 
--- ✅ MAIN
+-- ✅ MAIN LOGIC
 local itemIds = getAllItemIdsByKind(itemKind)
 if #itemIds == 0 then
 	warn("❌ No items of kind '" .. itemKind .. "' found.")
@@ -154,8 +151,7 @@ for tradeNumber = 1, tradeCount do
 	print("[→] Total added to trade:", addedCount)
 	if addedCount > 0 then
 		acceptAfterDelay()
-		confirmTrade()
-		waitForTradeToEnd() -- ✅ Wait until trade is over
+		confirmAndWaitForEnd()
 	end
 end
 
