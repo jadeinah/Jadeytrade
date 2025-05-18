@@ -1,22 +1,33 @@
--- LOAD CONFIG
+-- ✅ LOAD CONFIG SAFELY
 local config = getgenv().ScriptsConfig
-if not config then
-    error("❌ ScriptsConfig not found. Please run the config first.")
-end
+if not config then error("❌ ScriptsConfig is missing! Please define it before running the script.") end
 
+if type(config.targetPlayerName) ~= "string" then error("❌ 'targetPlayerName' must be a string") end
+if type(config.itemKind) ~= "string" then error("❌ 'itemKind' must be a string") end
+if type(config.useCustomAmount) ~= "boolean" then error("❌ 'useCustomAmount' must be true/false") end
+if type(config.customAmount) ~= "number" then error("❌ 'customAmount' must be a number") end
+
+-- ✅ CONFIG VARIABLES FROM getgenv
 local targetPlayerName = config.targetPlayerName
 local itemKind = config.itemKind
 local useCustomAmount = config.useCustomAmount
 local customAmount = config.customAmount
 
--- SERVICES
+-- ✅ SERVICES
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
 
--- FUNCTIONS
+-- ✅ FUNCTIONS
 local function getAllItemIdsByKind(kind)
-	local inventory = ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
+	local success, inventory = pcall(function()
+		return ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
+	end)
+
+	if not success or not inventory then
+		error("❌ Failed to get inventory.")
+	end
+
 	local matching = {}
 	for id, pet in pairs(inventory) do
 		if pet.kind == kind then
@@ -54,7 +65,7 @@ local function confirmTrade()
 	print("[✓] Trade confirmed")
 end
 
--- MAIN
+-- ✅ MAIN
 local itemIds = getAllItemIdsByKind(itemKind)
 if #itemIds == 0 then
 	warn("❌ No items of kind '" .. itemKind .. "' found.")
