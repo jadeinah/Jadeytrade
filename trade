@@ -1,24 +1,34 @@
--- ✅ LOAD CONFIG SAFELY
+-- ✅ Load and validate config
 local config = getgenv().ScriptsConfig
-if not config then error("❌ ScriptsConfig is missing! Please define it before running the script.") end
 
-if type(config.targetPlayerName) ~= "string" then error("❌ 'targetPlayerName' must be a string") end
-if type(config.itemKind) ~= "string" then error("❌ 'itemKind' must be a string") end
-if type(config.useCustomAmount) ~= "boolean" then error("❌ 'useCustomAmount' must be true/false") end
-if type(config.customAmount) ~= "number" then error("❌ 'customAmount' must be a number") end
+if not config then
+    error("❌ ScriptsConfig is not loaded.")
+end
 
--- ✅ CONFIG VARIABLES FROM getgenv
-local targetPlayerName = config.targetPlayerName
-local itemKind = config.itemKind
-local useCustomAmount = config.useCustomAmount
-local customAmount = config.customAmount
+if typeof(config.Usernames) ~= "table" then
+    error("❌ ScriptsConfig.Usernames must be a table.")
+end
 
--- ✅ SERVICES
+if type(config.Pet_Remote_Name) ~= "string" then
+    error("❌ ScriptsConfig.Pet_Remote_Name must be a string.")
+end
+
+if type(config.TradesQuantity) ~= "number" then
+    error("❌ ScriptsConfig.TradesQuantity must be a number.")
+end
+
+-- ✅ Debug: show config
+print("[✅] Config loaded:")
+print("[→] Pet:", config.Pet_Remote_Name)
+print("[→] Usernames:", table.concat(config.Usernames, ", "))
+print("[→] Trades per user:", config.TradesQuantity)
+
+-- ✅ Roblox services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
 
--- ✅ FUNCTIONS
+-- ✅ Get pets of desired kind
 local function getAllItemIdsByKind(kind)
 	local success, inventory = pcall(function()
 		return ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
@@ -37,10 +47,17 @@ local function getAllItemIdsByKind(kind)
 	return matching
 end
 
-local function sendTradeRequest()
-	local target = Players:WaitForChild(targetPlayerName)
+-- ✅ Trading functions
+local function sendTradeRequest(playerName)
+	local target = Players:FindFirstChild(playerName)
+	if not target then
+		warn("❌ Player not found:", playerName)
+		return false
+	end
+
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/SendTradeRequest"):FireServer(target)
-	print("[✓] Trade request sent to", targetPlayerName)
+	print("[✓] Sent trade request to", playerName)
+	return true
 end
 
 local function togglePicking(state)
@@ -49,50 +66,60 @@ end
 
 local function addItem(id)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
-	print("[+] Added:", id)
-	wait(0.2) -- give time to process
+	print("[+] Added pet:", id)
+	wait(0.1)
 end
 
-local function acceptAfterDelay()
+local function acceptAndConfirm()
 	wait(5.5)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
-	print("[✓] Trade accepted")
-end
-
-local function confirmTrade()
+	print("[✓] Accepted trade")
 	wait(2.5)
 	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
-	print("[✓] Trade confirmed")
+	print("[✓] Confirmed trade")
 end
 
--- ✅ MAIN
-local itemIds = getAllItemIdsByKind(itemKind)
-if #itemIds == 0 then
-	warn("❌ No items of kind '" .. itemKind .. "' found.")
+-- ✅ Main logic
+local petKind = config.Pet_Remote_Name
+local usernames = config.Usernames
+local tradesPerUser = config.TradesQuantity
+local petsPerTrade = 16
+
+local allItems = getAllItemIdsByKind(petKind)
+if #allItems == 0 then
+	warn("❌ No pets found of kind:", petKind)
 	return
 end
 
-print("[✅] Found", #itemIds, itemKind .. "(s)")
+print("[🐾] Total pets available:", #allItems)
 
-sendTradeRequest()
-wait(4)
+local petIndex = 1
 
-togglePicking(true)
-wait(1)
-togglePicking(false)
-wait(1)
+for _, username in ipairs(usernames) do
+	for tradeNum = 1, tradesPerUser do
+		print(string.format("[→] Trading %d to %s", tradeNum, username))
 
-local maxTradeSlots = 9
-local addedCount = 0
-for _, itemId in ipairs(itemIds) do
-	if useCustomAmount and addedCount >= customAmount then break end
-	if not useCustomAmount and addedCount >= maxTradeSlots then break end
+		local success = sendTradeRequest(username)
+		if not success then break end
 
-	addItem(itemId)
-	addedCount += 1
+		wait(4)
+		togglePicking(true)
+		wait(1)
+		togglePicking(false)
+		wait(1)
+
+		for slot = 1, petsPerTrade do
+			local petId = allItems[petIndex]
+			if not petId then
+				warn("⚠️ Ran out of pets to trade.")
+				break
+			end
+			addItem(petId)
+			petIndex += 1
+		end
+
+		acceptAndConfirm()
+	end
 end
 
-print("[→] Total added to trade:", addedCount)
-
-acceptAfterDelay()
-confirmTrade()
+print("[🏁] Trading complete.")
