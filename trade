@@ -10,14 +10,6 @@ local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
 local tradeCount = config.tradeCount or 1
 
--- ✅ REMOTES (CHANGE HERE IF NEEDED)
-local RemoteFolder = game:GetService("ReplicatedStorage"):WaitForChild("Remotes") -- ← change if needed
-local SendTradeRequest = RemoteFolder:WaitForChild("SendTradeRequest")
-local ToggleBusyIndication = RemoteFolder:WaitForChild("ToggleBusyIndication")
-local AcceptNegotiation = RemoteFolder:WaitForChild("AcceptNegotiation")
-local ConfirmTrade = RemoteFolder:WaitForChild("ConfirmTrade")
-local ClientTradeUpdated = RemoteFolder:WaitForChild("ClientTradeUpdated")
-
 -- ✅ DEHASH PATCH
 local function rename(remotename, hashedremote)
 	if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
@@ -69,51 +61,29 @@ end
 
 local function sendTradeRequest()
 	local target = Players:WaitForChild(targetPlayerName)
-	SendTradeRequest:FireServer(target)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/SendTradeRequest"):FireServer(target)
 	print("[✓] Trade request sent to", targetPlayerName)
 end
 
 local function togglePicking(state)
-	ToggleBusyIndication:FireServer({ picking = state })
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ToggleBusyIndication"):FireServer({ picking = state })
 end
 
 local function addItem(id)
-	RemoteFolder:WaitForChild("AddItemToOffer"):FireServer(id)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
 	print("[+] Added:", id)
 	wait(0.2)
 end
 
 local function acceptAfterDelay()
 	wait(5.5)
-	AcceptNegotiation:FireServer()
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
 	print("[✓] Trade accepted")
-end
-
-local function waitUntilOtherPlayerAccepts()
-	local otherAccepted = false
-
-	local conn = ClientTradeUpdated.OnClientEvent:Connect(function(data)
-		if typeof(data) == "table" and (data.theirAccepted or (data.accepted and data.accepted.theirSide)) then
-			otherAccepted = true
-			conn:Disconnect()
-			print("[✓] Other player accepted.")
-		end
-	end)
-
-	local timeout = 0
-	while not otherAccepted and timeout < 30 do
-		wait(1)
-		timeout += 1
-	end
-
-	if not otherAccepted then
-		warn("⚠️ Other player didn't accept in time.")
-	end
 end
 
 local function confirmTrade()
 	wait(2.5)
-	ConfirmTrade:FireServer()
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
 	print("[✓] Trade confirmed")
 end
 
@@ -160,9 +130,8 @@ for tradeNumber = 1, tradeCount do
 
 	if addedCount > 0 then
 		acceptAfterDelay()
-		waitUntilOtherPlayerAccepts()
 		confirmTrade()
-		wait(20) -- wait before next trade
+		wait(20) -- ✅ wait 20 seconds before next trade
 	else
 		warn("❌ No pets added. Stopping.")
 		break
