@@ -10,12 +10,6 @@ local useCustomAmount = config.useCustomAmount or false
 local customAmount = config.customAmount or 1
 local tradeCount = config.tradeCount or 1
 
--- ✅ SERVICES
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local API = ReplicatedStorage:WaitForChild("API")
-local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
-
 -- ✅ DEHASH PATCH
 local function rename(remotename, hashedremote)
 	if typeof(hashedremote) == "Instance" and typeof(remotename) == "string" then
@@ -24,7 +18,7 @@ local function rename(remotename, hashedremote)
 end
 
 local success, RouterClient = pcall(function()
-	return require(ReplicatedStorage
+	return require(game:GetService("ReplicatedStorage")
 		:WaitForChild("ClientModules")
 		:WaitForChild("Core")
 		:WaitForChild("RouterClient")
@@ -48,6 +42,11 @@ else
 	warn("⚠️ RouterClient not found or unreadable.")
 end
 
+-- ✅ SERVICES
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
+
 -- ✅ TRADE FUNCTIONS
 local function getAllItemIdsByKind(kind)
 	local inventory = ClientData.get_data()[Players.LocalPlayer.Name].inventory.pets
@@ -62,29 +61,29 @@ end
 
 local function sendTradeRequest()
 	local target = Players:WaitForChild(targetPlayerName)
-	API["TradeAPI/SendTradeRequest"]:FireServer(target)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/SendTradeRequest"):FireServer(target)
 	print("[✓] Trade request sent to", targetPlayerName)
 end
 
 local function togglePicking(state)
-	API["TradeAPI/ToggleBusyIndication"]:FireServer({ picking = state })
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ToggleBusyIndication"):FireServer({ picking = state })
 end
 
 local function addItem(id)
-	API["TradeAPI/AddItemToOffer"]:FireServer(id)
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AddItemToOffer"):FireServer(id)
 	print("[+] Added:", id)
 	wait(0.2)
 end
 
 local function acceptAfterDelay()
 	wait(5.5)
-	API["TradeAPI/AcceptNegotiation"]:FireServer()
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/AcceptNegotiation"):FireServer()
 	print("[✓] Trade accepted")
 end
 
 local function confirmTrade()
 	wait(2.5)
-	API["TradeAPI/ConfirmTrade"]:FireServer()
+	ReplicatedStorage:WaitForChild("API"):WaitForChild("TradeAPI/ConfirmTrade"):FireServer()
 	print("[✓] Trade confirmed")
 end
 
